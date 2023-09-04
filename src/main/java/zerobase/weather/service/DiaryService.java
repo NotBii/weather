@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import zerobase.weather.WeatherApplication;
 import zerobase.weather.domain.DateWeather;
 import zerobase.weather.domain.Diary;
+import zerobase.weather.error.InvalidDate;
 import zerobase.weather.repository.DateWeatherRepository;
 import zerobase.weather.repository.DiaryRepository;
 
@@ -82,7 +83,8 @@ public class DiaryService {
     }
     //DB에서 날씨 가져오기
     private DateWeather getDateWeather(LocalDate date) {
-        List<DateWeather> dateWeatherListFromDB = dateWeatherRepository.findAllByDate(date);
+        List<DateWeather> dateWeatherListFromDB = dateWeatherRepository.
+                findAllByDate(date);
         //DB에 날씨 정보가 없을 때 현재날씨 받아오기
         if (dateWeatherListFromDB.size() == 0 ) {
             return getWeatherFromApi();
@@ -90,10 +92,15 @@ public class DiaryService {
             return dateWeatherListFromDB.get(0);
         }
     }
-    //일기조회
+    //일기읽기
     @Transactional(readOnly = true)
     public List<Diary> readDiary(LocalDate date) {
         logger.info("read diary");
+        if(date.isAfter(LocalDate.ofYearDay(3000,1)) |
+                date.isBefore(LocalDate.ofYearDay(1900, 1))){
+            logger.info("date input error");
+            throw new InvalidDate();
+        }
         return diaryRepository.findAllByDate(date);
     }
 
@@ -101,10 +108,24 @@ public class DiaryService {
     @Transactional(readOnly = true)
     public List<Diary> readDiaries(LocalDate startDate, LocalDate endDate) {
         logger.info("read Diaries");
+        if (startDate.isAfter(LocalDate.ofYearDay(3000,1)) |
+                startDate.isBefore(LocalDate.ofYearDay(1900, 1)) |
+                endDate.isAfter(LocalDate.ofYearDay(3000,1))|
+                endDate.isBefore(LocalDate.ofYearDay(1900,1))){
+            logger.info("date input error");
+            throw new InvalidDate();
+        }
+        logger.info("read Diaries complete");
         return diaryRepository.findAllByDateBetween(startDate, endDate);
     }
     //일기수정
     public void updateDiary(LocalDate date, String text) {
+        logger.info("starting update");
+        if (date.isAfter(LocalDate.ofYearDay(3000,1)) |
+                date.isBefore(LocalDate.ofYearDay(1900, 1))){
+            logger.info("date input error");
+            throw new InvalidDate();
+        }
         Diary nowDiary = diaryRepository.getFirstByDate(date);
         nowDiary.setText(text);
         diaryRepository.save(nowDiary);
@@ -112,13 +133,21 @@ public class DiaryService {
     }
     //일기 삭제
     public void deleteDiary(LocalDate date) {
+        logger.info("start delete");
+        if (date.isAfter(LocalDate.ofYearDay(3000,1)) |
+                date.isBefore(LocalDate.ofYearDay(1900, 1))){
+
+            logger.info("date input error");
+            throw new InvalidDate();
+        }
         diaryRepository.deleteAllByDate(date);
         logger.info("deleted");
     }
     //날씨 api 요청
     private String getWeatherString() {
         logger.info("getting data from api");
-        String apiUrl = "https://api.openweathermap.org/data/2.5/weather?q=Busan&appid=" + apiKey;
+        String apiUrl = "https://api.openweathermap.org/data/2.5/" +
+                "weather?q=Busan&appid=" + apiKey;
 
         try {
             URL url = new URL(apiUrl);
@@ -170,6 +199,5 @@ public class DiaryService {
         resultMap.put("icon", weatherData.get("icon"));
         return resultMap;
     }
-
 
 }
