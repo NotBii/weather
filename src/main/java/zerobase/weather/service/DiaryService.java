@@ -82,7 +82,8 @@ public class DiaryService {
         return dateWeather;
     }
     //DB에서 날씨 가져오기
-    private DateWeather getDateWeather(LocalDate date) {
+    @Transactional
+    public DateWeather getDateWeather(LocalDate date) {
         List<DateWeather> dateWeatherListFromDB = dateWeatherRepository.
                 findAllByDate(date);
         //DB에 날씨 정보가 없을 때 현재날씨 받아오기
@@ -119,6 +120,7 @@ public class DiaryService {
         return diaryRepository.findAllByDateBetween(startDate, endDate);
     }
     //일기수정
+    @Transactional
     public void updateDiary(LocalDate date, String text) {
         logger.info("starting update");
         if (date.isAfter(LocalDate.ofYearDay(3000,1)) |
